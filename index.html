@@ -1,4 +1,5 @@
-<!DOCTYPE html><html lang="pt-BR">
+<!DOCTYPE html>
+<html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
 <title>Space Survivor</title>
@@ -17,18 +18,24 @@ canvas{background:linear-gradient(#020617,#000);border-radius:20px;box-shadow:0 
 .menu button:hover{filter:brightness(1.1)}
 </style>
 </head>
-<body><div class="hud">
+<body>
+
+<div class="hud">
   <span id="score">Score: 0</span>
   <span id="lives">Lives: 3</span>
   <span id="best">Best: 0</span>
-</div><div id="overlay" class="overlay">
+</div>
+
+<div id="overlay" class="overlay">
   <div class="menu">
     <h1>SPACE SURVIVOR</h1>
     <p>WASD / Setas para mover</p>
     <p>Espaço para atirar</p>
     <button id="startBtn">Iniciar</button>
   </div>
-</div><canvas id="game" width="400" height="600"></canvas>
+</div>
+
+<canvas id="game" width="400" height="600"></canvas>
 
 <script>
 const canvas=document.getElementById('game');
@@ -118,5 +125,6 @@ function draw(){
 
 function loop(){update();draw();requestAnimationFrame(loop)}
 loop();
-</script></body>
+</script>
+</body>
 </html>
