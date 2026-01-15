@@ -14,11 +14,10 @@ body{background:radial-gradient(circle at top,#020617,#000);font-family:Arial,He
 canvas{background:linear-gradient(#020617,#000);border-radius:20px;box-shadow:0 0 60px rgba(56,189,248,.35)}
 .hud{position:absolute;top:10px;width:100%;display:flex;justify-content:center;gap:12px;pointer-events:none}
 .hud span{background:rgba(0,0,0,.6);padding:6px 14px;border-radius:999px;font-size:14px}
-.overlay{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.8)}
-.menu{background:#020617;padding:28px 32px;border-radius:20px;text-align:center;box-shadow:0 0 60px rgba(56,189,248,.35)}
-.menu h1{margin-bottom:10px;letter-spacing:1px}
-.menu p{font-size:14px;opacity:.8;margin-bottom:16px}
-.menu button{padding:10px 24px;border:none;border-radius:999px;cursor:pointer;background:#38bdf8;color:#020617;font-weight:bold;font-size:14px}
+.overlay{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.85)}
+.menu{background:#020617;padding:28px 32px;border-radius:20px;text-align:center;box-shadow:0 0 60px rgba(56,189,248,.35);width:250px}
+.menu h1{margin-bottom:20px;letter-spacing:1px}
+.menu button{display:block;width:100%;padding:12px 0;margin:8px 0;border:none;border-radius:999px;cursor:pointer;background:#38bdf8;color:#020617;font-weight:bold;font-size:16px;transition:0.2s}
 .menu button:hover{filter:brightness(1.1)}
 </style>
 </head>
@@ -32,11 +31,11 @@ canvas{background:linear-gradient(#020617,#000);border-radius:20px;box-shadow:0 
 </div>
 
 <div id="overlay" class="overlay">
-  <div class="menu">
+  <div class="menu" id="mainMenu">
     <h1>SPACE SURVIVOR</h1>
-    <p>WASD / Setas para mover</p>
-    <p>Espaço para atirar</p>
-    <button id="startBtn">Iniciar</button>
+    <button id="playBtn">Jogar</button>
+    <button id="optionsBtn">Opções</button>
+    <button id="exitBtn">Sair</button>
   </div>
 </div>
 
@@ -50,7 +49,10 @@ const scoreEl=document.getElementById('score');
 const livesEl=document.getElementById('lives');
 const bestEl=document.getElementById('best');
 const overlay=document.getElementById('overlay');
-const startBtn=document.getElementById('startBtn');
+const mainMenu=document.getElementById('mainMenu');
+const playBtn=document.getElementById('playBtn');
+const optionsBtn=document.getElementById('optionsBtn');
+const exitBtn=document.getElementById('exitBtn');
 
 let bestScore=Number(localStorage.getItem('space-survivor-best')||0);
 bestEl.textContent='Best: '+bestScore;
@@ -71,7 +73,6 @@ const sounds={
 const keys={};
 window.addEventListener('keydown',e=>keys[e.key.toLowerCase()]=true);
 window.addEventListener('keyup',e=>keys[e.key.toLowerCase()]=false);
-startBtn.onclick=startGame;
 
 /* ================= TOUCH ================= */
 let touchStart = null;
@@ -137,7 +138,6 @@ function explode(x,y){
 function update(){
   if(!running) return;
 
-  // MOVEMENT
   if(keys['arrowleft']||keys['a']) player.x-=player.speed;
   if(keys['arrowright']||keys['d']) player.x+=player.speed;
   if(keys['arrowup']||keys['w']) player.y-=player.speed;
@@ -227,7 +227,12 @@ loop();
 
 /* ================= SERVICE WORKER ================= */
 if("serviceWorker" in navigator){ navigator.serviceWorker.register("service-worker.js"); }
-</script>
 
+/* ================= MENU BUTTONS ================= */
+playBtn.onclick = () => startGame();
+optionsBtn.onclick = () => alert("Opções ainda não implementadas!");
+exitBtn.onclick = () => { alert("Obrigado por jogar!"); window.close(); }
+
+</script>
 </body>
 </html>
