@@ -1,9 +1,9 @@
 {
   "name": "Space Survivor",
-  "short_name": "Space Survivor",
-  "description": "Space Survivor é um jogo indie arcade espacial.",
-  "start_url": "/index.html",
-  "scope": "/",
+  "short_name": "SpaceSurvivor",
+  "description": "Space Survivor é um jogo arcade espacial indie.",
+  "start_url": "index.html",
+  "scope": ".",
   "display": "fullscreen",
   "orientation": "portrait",
   "background_color": "#000000",
@@ -13,14 +13,12 @@
     {
       "src": "icon-192.png",
       "sizes": "192x192",
-      "type": "image/png",
-      "purpose": "any maskable"
+      "type": "image/png"
     },
     {
       "src": "icon-512.png",
       "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "any maskable"
+      "type": "image/png"
     }
   ]
 }
