@@ -4,10 +4,7 @@
 <meta charset="UTF-8">
 <title>Space Survivor</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-<!-- PWA / ANDROID -->
 <link rel="manifest" href="manifest.json">
-
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 body{background:radial-gradient(circle at top,#020617,#000);font-family:Arial,Helvetica,sans-serif;color:#e5e7eb;height:100vh;display:flex;align-items:center;justify-content:center;overflow:hidden;position:relative}
@@ -19,10 +16,11 @@ canvas{background:linear-gradient(#020617,#000);border-radius:20px;box-shadow:0 
 .menu h1{margin-bottom:20px;letter-spacing:1px}
 .menu button{display:block;width:100%;padding:12px 0;margin:8px 0;border:none;border-radius:999px;cursor:pointer;background:#38bdf8;color:#020617;font-weight:bold;font-size:16px;transition:0.2s}
 .menu button:hover{filter:brightness(1.1)}
-#mobileShootBtn{position:absolute;bottom:20px;right:20px;width:80px;height:80px;background:#fb7185;color:#fff;border:none;border-radius:50%;font-size:18px;font-weight:bold;z-index:15;display:none;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 0 20px rgba(251,113,133,.5)}
+#mobileShootBtn,#mobilePauseBtn{position:absolute;bottom:20px;width:80px;height:80px;border:none;border-radius:50%;font-size:18px;font-weight:bold;display:none;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 0 20px rgba(251,113,133,.5);z-index:15}
+#mobileShootBtn{right:20px;background:#fb7185;color:#fff;}
+#mobilePauseBtn{left:20px;background:#38bdf8;color:#020617;}
 </style>
 </head>
-
 <body>
 
 <div class="hud">
@@ -41,104 +39,103 @@ canvas{background:linear-gradient(#020617,#000);border-radius:20px;box-shadow:0 
 </div>
 
 <canvas id="game" width="400" height="600"></canvas>
-
 <button id="mobileShootBtn">ATIRAR</button>
+<button id="mobilePauseBtn">PAUSE</button>
 
 <script>
 /* ================= SETUP ================= */
-const canvas=document.getElementById('game');
-const ctx=canvas.getContext('2d');
-const scoreEl=document.getElementById('score');
-const livesEl=document.getElementById('lives');
-const bestEl=document.getElementById('best');
-const overlay=document.getElementById('overlay');
-const mainMenu=document.getElementById('mainMenu');
-const playBtn=document.getElementById('playBtn');
-const optionsBtn=document.getElementById('optionsBtn');
-const exitBtn=document.getElementById('exitBtn');
-const mobileShootBtn=document.getElementById('mobileShootBtn');
+const canvas = document.getElementById('game');
+const ctx = canvas.getContext('2d');
+const scoreEl = document.getElementById('score');
+const livesEl = document.getElementById('lives');
+const bestEl = document.getElementById('best');
+const overlay = document.getElementById('overlay');
+const mainMenu = document.getElementById('mainMenu');
+const mobileShootBtn = document.getElementById('mobileShootBtn');
+const mobilePauseBtn = document.getElementById('mobilePauseBtn');
 
-let bestScore=Number(localStorage.getItem('space-survivor-best')||0);
-bestEl.textContent='Best: '+bestScore;
+let bestScore = Number(localStorage.getItem('space-survivor-best')||0);
+bestEl.textContent = 'Best: ' + bestScore;
 
-const player={x:200,y:300,r:14,speed:5,shield:0,shot:1};
-let bullets=[],enemies=[],stars=[],powerups=[],particles=[];
-let score=0,lives=3,running=false,shake=0;
-let shootCooldown=0;
+const player = {x:200, y:300, r:14, speed:5, shield:0, shot:1};
+let bullets=[], enemies=[], stars=[], powerups=[], particles=[];
+let score=0, lives=3, running=false, paused=false, shake=0;
+let shootCooldown=0, soundOn=true, discordOn=true;
 
 /* ================= SOUNDS ================= */
-const sounds={
-  shoot:new Audio('https://assets.mixkit.co/sfx/preview/mixkit-laser-weapon-shot-1681.mp3'),
-  hit:new Audio('https://assets.mixkit.co/sfx/preview/mixkit-arcade-game-explosion-2759.mp3'),
-  power:new Audio('https://assets.mixkit.co/sfx/preview/mixkit-achievement-bell-600.mp3')
+const sounds = {
+  shoot: new Audio('https://assets.mixkit.co/sfx/preview/mixkit-laser-weapon-shot-1681.mp3'),
+  hit: new Audio('https://assets.mixkit.co/sfx/preview/mixkit-arcade-game-explosion-2759.mp3'),
+  power: new Audio('https://assets.mixkit.co/sfx/preview/mixkit-achievement-bell-600.mp3')
 };
 
 /* ================= INPUT ================= */
-const keys={};
-window.addEventListener('keydown',e=>keys[e.key.toLowerCase()]=true);
-window.addEventListener('keyup',e=>keys[e.key.toLowerCase()]=false);
+const keys = {};
+window.addEventListener('keydown', e => keys[e.key.toLowerCase()] = true);
+window.addEventListener('keyup', e => keys[e.key.toLowerCase()] = false);
 
 /* ================= TOUCH ================= */
 let touchStart = null;
 canvas.addEventListener('touchstart', e => { e.preventDefault(); touchStart = e.touches[0]; });
 canvas.addEventListener('touchmove', e => {
-    e.preventDefault();
-    if(!touchStart) return;
-    const touch = e.touches[0];
-    const dx = touch.clientX - touchStart.clientX;
-    const dy = touch.clientY - touchStart.clientY;
-    const threshold = 5;
-    keys['arrowright'] = dx > threshold;
-    keys['arrowleft']  = dx < -threshold;
-    keys['arrowdown']  = dy > threshold;
-    keys['arrowup']    = dy < -threshold;
+  e.preventDefault(); if(!touchStart) return;
+  const touch = e.touches[0];
+  const dx = touch.clientX - touchStart.clientX;
+  const dy = touch.clientY - touchStart.clientY;
+  const threshold = 5;
+  keys['arrowright'] = dx > threshold;
+  keys['arrowleft'] = dx < -threshold;
+  keys['arrowdown'] = dy > threshold;
+  keys['arrowup'] = dy < -threshold;
 });
-canvas.addEventListener('touchend', e => {
-    keys['arrowright'] = keys['arrowleft'] = keys['arrowup'] = keys['arrowdown'] = false;
-    touchStart = null;
-});
+canvas.addEventListener('touchend', e => { keys['arrowright']=keys['arrowleft']=keys['arrowup']=keys['arrowdown']=false; touchStart=null; });
 
-/* ================= MOBILE SHOOT BUTTON ================= */
-mobileShootBtn.addEventListener('touchstart', e => { e.preventDefault(); keys[' '] = true; });
-mobileShootBtn.addEventListener('touchend', e => { e.preventDefault(); keys[' '] = false; });
+/* ================= MOBILE BUTTONS ================= */
+mobileShootBtn.addEventListener('touchstart', e=>{ e.preventDefault(); keys[' ']=true; });
+mobileShootBtn.addEventListener('touchend', e=>{ e.preventDefault(); keys[' ']=false; });
+mobilePauseBtn.addEventListener('touchstart', e=>{ e.preventDefault(); togglePause(); });
 
 /* ================= GAMEPAD ================= */
-window.addEventListener("gamepadconnected", e => console.log("Gamepad connected:", e.gamepad));
 function pollGamepad(){
-    const gp = navigator.getGamepads()[0];
-    if(gp){
-        keys['arrowup'] = gp.axes[1] < -0.5;
-        keys['arrowdown'] = gp.axes[1] > 0.5;
-        keys['arrowleft'] = gp.axes[0] < -0.5;
-        keys['arrowright'] = gp.axes[0] > 0.5;
-        keys[' '] = gp.buttons[0].pressed; // Botão A dispara
-    }
-    requestAnimationFrame(pollGamepad);
+  const gp = navigator.getGamepads()[0];
+  if(gp){
+    keys['arrowup'] = gp.axes[1] < -0.5;
+    keys['arrowdown'] = gp.axes[1] > 0.5;
+    keys['arrowleft'] = gp.axes[0] < -0.5;
+    keys['arrowright'] = gp.axes[0] > 0.5;
+    keys[' '] = gp.buttons[0].pressed;
+    if(gp.buttons[9].pressed) togglePause(); // Start button pauses
+  }
+  requestAnimationFrame(pollGamepad);
 }
 pollGamepad();
 
 /* ================= GAME ================= */
 function startGame(){
+  // RESET GAME STATE
   score=0;lives=3;bullets=[];enemies=[];stars=[];powerups=[];particles=[];
-  player.x=200;player.y=300;player.shield=0;player.shot=1;
-  running=true;overlay.style.display='none';
-
-  // MOSTRAR BOTÃO DE TIRO EM MOBILE
-  if(window.innerWidth <= 768) mobileShootBtn.style.display = 'flex';
+  player.x=200; player.y=300; player.shield=0; player.shot=1;
+  running = true; paused = false; overlay.style.display='none';
+  if(window.innerWidth <= 768){ mobileShootBtn.style.display='flex'; mobilePauseBtn.style.display='flex'; }
+  if(window.innerWidth > 768) initDiscordRPC();
+  showIntro();
 }
 
-function spawnStar(){stars.push({x:Math.random()*400,y:-10,r:Math.random()*2+1,s:Math.random()*1.5+.5});}
-function spawnEnemy(){enemies.push({x:Math.random()*370+15,y:-30,r:14,s:2+Math.random()*2,zig:Math.random()<.5});}
-function spawnPower(x,y){
-  const t=Math.random();
-  powerups.push({x,y,r:8,s:2,type:t<.33?'double':t<.66?'shield':'life'});
+function showIntro(){
+  overlay.innerHTML = `<div class="menu"><h1>PREPARE-SE!</h1><button id="startBtn">Iniciar</button></div>`;
+  overlay.style.display = 'flex';
+  document.getElementById('startBtn').onclick = ()=>{ overlay.style.display='none'; };
 }
+
+/* ================= SPAWN ================= */
+function spawnStar(){ stars.push({x:Math.random()*400,y:-10,r:Math.random()*2+1,s:Math.random()*1.5+.5}); }
+function spawnEnemy(){ enemies.push({x:Math.random()*370+15,y:-30,r:14,s:2+Math.random()*2,zig:Math.random()<.5}); }
+function spawnPower(x,y){ const t=Math.random(); powerups.push({x,y,r:8,s:2,type:t<.33?'double':t<.66?'shield':'life'}); }
 
 function shoot(){
   if(shootCooldown>0) return;
   shootCooldown=12;
-  sounds.shoot.currentTime=0;
-  sounds.shoot.play();
+  if(soundOn){ sounds.shoot.currentTime=0; sounds.shoot.play(); }
   for(let i=0;i<player.shot;i++) bullets.push({x:player.x+(i-0.5)*10,y:player.y-20,s:8});
 }
 
@@ -146,90 +143,121 @@ function explode(x,y){
   for(let i=0;i<12;i++) particles.push({x,y,vx:(Math.random()-.5)*4,vy:(Math.random()-.5)*4,l:30});
 }
 
-function update(){
+/* ================= PAUSE ================= */
+function togglePause(){
   if(!running) return;
+  paused = !paused;
+  if(paused){
+    overlay.innerHTML=`<div class="menu">
+      <h1>PAUSE</h1>
+      <button onclick="togglePause()">Continuar</button>
+      <button onclick="restartGame()">Reiniciar</button>
+      <button onclick="exitGame()">Sair</button>
+    </div>`;
+    overlay.style.display='flex';
+  } else overlay.style.display='none';
+}
+window.addEventListener('keydown', e=>{ if(e.key==='Escape') togglePause(); });
 
+function restartGame(){ startGame(); }
+function exitGame(){ alert("Obrigado por jogar!"); window.close(); }
+
+/* ================= OPTIONS ================= */
+function showOptions(){
+  overlay.innerHTML=`<div class="menu">
+    <h1>OPÇÕES</h1>
+    <p>Controle: WASD / Touch / Gamepad</p>
+    <p>Som: <button id="soundBtn">${soundOn?"ON":"OFF"}</button></p>
+    <p>Discord RPC (desktop): <button id="discordBtn">${discordOn?"ON":"OFF"}</button></p>
+    <button id="backBtn">Voltar</button>
+  </div>`;
+  overlay.style.display='flex';
+  document.getElementById('backBtn').onclick = ()=> overlay.innerHTML = mainMenu.outerHTML;
+  document.getElementById('soundBtn').onclick = ()=>{ soundOn=!soundOn; document.getElementById('soundBtn').textContent = soundOn?"ON":"OFF"; };
+  document.getElementById('discordBtn').onclick = ()=>{ discordOn=!discordOn; document.getElementById('discordBtn').textContent = discordOn?"ON":"OFF"; };
+}
+
+document.getElementById('playBtn').onclick = startGame;
+document.getElementById('optionsBtn').onclick = showOptions;
+document.getElementById('exitBtn').onclick = exitGame;
+
+/* ================= UPDATE / DRAW ================= */
+function update(){
+  if(!running || paused) return;
   if(keys['arrowleft']||keys['a']) player.x-=player.speed;
   if(keys['arrowright']||keys['d']) player.x+=player.speed;
   if(keys['arrowup']||keys['w']) player.y-=player.speed;
   if(keys['arrowdown']||keys['s']) player.y+=player.speed;
   if(keys[' ']) shoot();
-  shootCooldown=Math.max(0,shootCooldown-1);
+  shootCooldown = Math.max(0,shootCooldown-1);
 
-  player.x=Math.max(player.r,Math.min(canvas.width-player.r,player.x));
-  player.y=Math.max(player.r,Math.min(canvas.height-player.r,player.y));
+  player.x = Math.max(player.r, Math.min(canvas.width-player.r, player.x));
+  player.y = Math.max(player.r, Math.min(canvas.height-player.r, player.y));
 
-  bullets.forEach(b=>b.y-=b.s); bullets=bullets.filter(b=>b.y>-20);
-  enemies.forEach(e=>{e.y+=e.s;if(e.zig)e.x+=Math.sin(e.y/30)*2}); enemies=enemies.filter(e=>e.y<650);
-  stars.forEach(s=>s.y+=s.s); stars=stars.filter(s=>s.y<620);
-  powerups.forEach(p=>p.y+=p.s); powerups=powerups.filter(p=>p.y<620);
+  bullets.forEach(b=>b.y-=b.s); bullets = bullets.filter(b=>b.y>-20);
+  enemies.forEach(e=>{ e.y+=e.s; if(e.zig) e.x+=Math.sin(e.y/30)*2; }); enemies = enemies.filter(e=>e.y<650);
+  stars.forEach(s=>s.y+=s.s); stars = stars.filter(s=>s.y<620);
+  powerups.forEach(p=>p.y+=p.s); powerups = powerups.filter(p=>p.y<620);
 
+  // COLLISIONS
   enemies.forEach((e,ei)=>{
     if(Math.hypot(player.x-e.x,player.y-e.y)<player.r+e.r){
       explode(e.x,e.y); enemies.splice(ei,1); shake=10;
       if(player.shield>0) player.shield--; else if(--lives<=0) endGame();
     }
   });
-
   bullets.forEach((b,bi)=>{
     enemies.forEach((e,ei)=>{
       if(Math.hypot(b.x-e.x,b.y-e.y)<e.r){
-        sounds.hit.currentTime=0; sounds.hit.play();
-        explode(e.x,e.y);
-        enemies.splice(ei,1); bullets.splice(bi,1);
-        score+=10;
+        if(soundOn){ sounds.hit.currentTime=0; sounds.hit.play(); }
+        explode(e.x,e.y); enemies.splice(ei,1); bullets.splice(bi,1); score+=10;
         if(Math.random()<.3) spawnPower(e.x,e.y);
       }
     });
   });
-
   powerups.forEach((p,pi)=>{
     if(Math.hypot(player.x-p.x,player.y-p.y)<player.r+p.r){
-      sounds.power.currentTime=0; sounds.power.play();
+      if(soundOn){ sounds.power.currentTime=0; sounds.power.play(); }
       if(p.type==='life') lives=Math.min(5,lives+1);
       if(p.type==='double') player.shot=2;
       if(p.type==='shield') player.shield=3;
       powerups.splice(pi,1);
     }
   });
+  particles.forEach(pt=>{ pt.x+=pt.vx; pt.y+=pt.vy; pt.l--; });
+  particles = particles.filter(p=>p.l>0);
 
-  particles.forEach(pt=>{pt.x+=pt.vx; pt.y+=pt.vy; pt.l--;});
-  particles=particles.filter(p=>p.l>0);
-
-  score++; scoreEl.textContent='Score: '+score;
-  livesEl.textContent='Lives: '+lives;
+  score++; scoreEl.textContent = 'Score: '+score;
+  livesEl.textContent = 'Lives: '+lives;
 
   if(Math.random()<.08) spawnStar();
   if(Math.random()<.03) spawnEnemy();
 }
 
 function endGame(){
-  running=false;
-  bestScore=Math.max(bestScore,score);
-  localStorage.setItem('space-survivor-best',bestScore);
-  bestEl.textContent='Best: '+bestScore;
-  mobileShootBtn.style.display='none';
-  overlay.innerHTML=`
-    <div class="menu">
-      <h1>GAME OVER</h1>
-      <p>Score: ${score}</p>
-      <p>Best: ${bestScore}</p>
-      <button onclick="location.reload()">Reiniciar</button>
-    </div>`;
+  running = false; paused = false; mobileShootBtn.style.display='none'; mobilePauseBtn.style.display='none';
+  bestScore = Math.max(bestScore, score);
+  localStorage.setItem('space-survivor-best', bestScore);
+  bestEl.textContent = 'Best: '+bestScore;
+  overlay.innerHTML = `<div class="menu">
+    <h1>GAME OVER</h1>
+    <p>Score: ${score}</p>
+    <p>Best: ${bestScore}</p>
+    <button onclick="restartGame()">Reiniciar</button>
+  </div>`;
   overlay.style.display='flex';
 }
 
 function draw(){
   ctx.save();
-  if(shake){ctx.translate((Math.random()-.5)*shake,(Math.random()-.5)*shake);shake--}
+  if(shake){ ctx.translate((Math.random()-.5)*shake,(Math.random()-.5)*shake); shake--; }
   ctx.clearRect(0,0,400,600);
-
-  ctx.fillStyle='#94a3b8'; stars.forEach(s=>{ctx.beginPath(); ctx.arc(s.x,s.y,s.r,0,Math.PI*2); ctx.fill();});
+  ctx.fillStyle='#94a3b8'; stars.forEach(s=>{ ctx.beginPath(); ctx.arc(s.x,s.y,s.r,0,Math.PI*2); ctx.fill(); });
   ctx.fillStyle='#38bdf8'; ctx.beginPath(); ctx.arc(player.x,player.y,player.r,0,Math.PI*2); ctx.fill();
-  if(player.shield>0){ctx.strokeStyle='#22c55e'; ctx.lineWidth=3; ctx.beginPath(); ctx.arc(player.x,player.y,player.r+6,0,Math.PI*2); ctx.stroke();}
+  if(player.shield>0){ ctx.strokeStyle='#22c55e'; ctx.lineWidth=3; ctx.beginPath(); ctx.arc(player.x,player.y,player.r+6,0,Math.PI*2); ctx.stroke(); }
   ctx.fillStyle='#e5e7eb'; bullets.forEach(b=>ctx.fillRect(b.x-2,b.y,4,10));
-  ctx.fillStyle='#fb7185'; enemies.forEach(e=>{ctx.beginPath();ctx.arc(e.x,e.y,e.r,0,Math.PI*2);ctx.fill();});
-  ctx.fillStyle='#22c55e'; powerups.forEach(p=>{ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,Math.PI*2);ctx.fill();});
+  ctx.fillStyle='#fb7185'; enemies.forEach(e=>{ ctx.beginPath(); ctx.arc(e.x,e.y,e.r,0,Math.PI*2); ctx.fill(); });
+  ctx.fillStyle='#22c55e'; powerups.forEach(p=>{ ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,Math.PI*2); ctx.fill(); });
   ctx.fillStyle='#facc15'; particles.forEach(pt=>ctx.fillRect(pt.x,pt.y,2,2));
   ctx.restore();
 }
@@ -238,26 +266,14 @@ function loop(){ update(); draw(); requestAnimationFrame(loop); }
 loop();
 
 /* ================= SERVICE WORKER ================= */
-if("serviceWorker" in navigator){ navigator.serviceWorker.register("service-worker.js"); }
+if("serviceWorker" in navigator) navigator.serviceWorker.register("service-worker.js");
 
-/* ================= MENU BUTTONS ================= */
-playBtn.onclick = () => startGame();
-optionsBtn.onclick = () => showOptions();
-exitBtn.onclick = () => { alert("Obrigado por jogar!"); window.close(); }
-
-/* ================= OPTIONS MENU ================= */
-function showOptions(){
-  overlay.innerHTML = `
-    <div class="menu">
-      <h1>OPÇÕES</h1>
-      <p>Controle: WASD / Touch / Gamepad</p>
-      <p>Som: Ativo</p>
-      <button id="backBtn">Voltar</button>
-    </div>`;
-  overlay.style.display='flex';
-  document.getElementById('backBtn').onclick = () => overlay.innerHTML = mainMenu.outerHTML;
+/* ================= DISCORD RPC (DESKTOP ONLY) ================= */
+function initDiscordRPC(){
+  if(!discordOn || /Mobi|Android/i.test(navigator.userAgent)) return;
+  console.log("Discord RPC conectado (Desktop)");
+  // Aqui você inicializa a biblioteca node discord-rpc no Electron
 }
 </script>
-
 </body>
 </html>
