@@ -4,268 +4,299 @@
 <meta charset="UTF-8">
 <title>Space Survivor</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<link rel="manifest" href="manifest.json">
 <style>
-*{margin:0;padding:0;box-sizing:border-box}
-body{background:radial-gradient(circle at top,#020617,#000);font-family:Arial,Helvetica,sans-serif;color:#e5e7eb;height:100vh;display:flex;align-items:center;justify-content:center;overflow:hidden;position:relative}
-canvas{background:linear-gradient(#020617,#000);border-radius:20px;box-shadow:0 0 60px rgba(56,189,248,.35)}
-.hud{position:absolute;top:10px;width:100%;display:flex;justify-content:center;gap:12px;pointer-events:none;z-index:10}
-.hud span{background:rgba(0,0,0,.6);padding:6px 14px;border-radius:999px;font-size:14px}
-.overlay{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.85);z-index:20;transition:0.3s}
-.menu{background:#020617;padding:28px 32px;border-radius:20px;text-align:center;box-shadow:0 0 60px rgba(56,189,248,.35);width:250px;animation:fadeIn 0.5s ease-in-out;}
-.menu h1{margin-bottom:20px;letter-spacing:1px}
-.menu button{display:block;width:100%;padding:12px 0;margin:8px 0;border:none;border-radius:999px;cursor:pointer;background:#38bdf8;color:#020617;font-weight:bold;font-size:16px;transition:0.2s}
-.menu button:hover{filter:brightness(1.2)}
-#mobileShootBtn,#mobilePauseBtn{position:absolute;bottom:20px;width:80px;height:80px;border:none;border-radius:50%;font-size:18px;font-weight:bold;display:none;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 0 20px rgba(251,113,133,.5);z-index:15}
-#mobileShootBtn{right:20px;background:#fb7185;color:#fff;}
-#mobilePauseBtn{left:20px;background:#38bdf8;color:#020617;}
-@keyframes fadeIn{from{opacity:0;transform:scale(0.9)}to{opacity:1;transform:scale(1)}}
+*{margin:0;padding:0;box-sizing:border-box;font-family:Arial}
+body{background:#000;color:#fff;overflow:hidden}
+canvas{display:block;margin:auto;background:#020617;border-radius:16px}
+
+/* HUD */
+.hud{
+  position:absolute;top:12px;width:100%;
+  display:flex;justify-content:center;gap:10px;z-index:5
+}
+.hud span{
+  background:rgba(0,0,0,.6);
+  padding:6px 14px;border-radius:999px;font-size:14px
+}
+
+/* MENU */
+.overlay{
+  position:absolute;inset:0;
+  display:flex;align-items:center;justify-content:center;
+  background:rgba(0,0,0,.85);z-index:10
+}
+.menu{
+  background:#020617;
+  border-radius:20px;
+  padding:26px;
+  width:280px;
+  text-align:center;
+  box-shadow:0 0 40px rgba(56,189,248,.4)
+}
+.menu h1{margin-bottom:14px}
+.menu button{
+  width:100%;
+  margin:6px 0;
+  padding:12px;
+  border:none;
+  border-radius:999px;
+  font-weight:bold;
+  cursor:pointer;
+  background:#38bdf8;
+  color:#020617;
+  transition:.2s
+}
+.menu button:hover{filter:brightness(1.1)}
+
+/* MOBILE */
+#shootBtn,#pauseBtn{
+  position:absolute;bottom:20px;
+  width:80px;height:80px;
+  border-radius:50%;
+  border:none;
+  font-weight:bold;
+  display:none;
+  z-index:6
+}
+#shootBtn{right:20px;background:#ef4444;color:#fff}
+#pauseBtn{left:20px;background:#38bdf8;color:#000}
+
+/* JOYSTICK */
+#joystick{
+  position:absolute;bottom:25px;left:50%;
+  transform:translateX(-50%);
+  width:120px;height:120px;
+  border-radius:50%;
+  background:rgba(255,255,255,.08);
+  display:none;z-index:6
+}
+#stick{
+  width:50px;height:50px;
+  border-radius:50%;
+  background:#38bdf8;
+  position:absolute;
+  top:35px;left:35px
+}
 </style>
 </head>
 <body>
 
 <div class="hud">
-  <span id="score">Score: 0</span>
-  <span id="lives">Lives: 3</span>
-  <span id="best">Best: 0</span>
-  <span id="difficulty">Dificuldade: Normal</span>
-  <span id="level">Nível: 1</span>
+  <span id="hudScore">Score: 0</span>
+  <span id="hudLevel">Nível: 1</span>
 </div>
 
-<div id="overlay" class="overlay">
-  <div class="menu" id="mainMenu">
-    <h1>SPACE SURVIVOR</h1>
-    <button id="playBtn">Jogar</button>
-    <button id="optionsBtn">Opções</button>
-    <button id="exitBtn">Sair</button>
-  </div>
-</div>
+<div id="overlay" class="overlay"></div>
 
 <canvas id="game" width="400" height="600"></canvas>
-<button id="mobileShootBtn">ATIRAR</button>
-<button id="mobilePauseBtn">PAUSE</button>
+
+<button id="shootBtn">ATIRAR</button>
+<button id="pauseBtn">PAUSE</button>
+
+<div id="joystick">
+  <div id="stick"></div>
+</div>
 
 <script>
-/* ================= SETUP ================= */
-const canvas=document.getElementById('game');
-const ctx=canvas.getContext('2d');
-const scoreEl=document.getElementById('score');
-const livesEl=document.getElementById('lives');
-const bestEl=document.getElementById('best');
-const diffEl=document.getElementById('difficulty');
-const levelEl=document.getElementById('level');
-const overlay=document.getElementById('overlay');
-const mobileShootBtn=document.getElementById('mobileShootBtn');
-const mobilePauseBtn=document.getElementById('mobilePauseBtn');
+/* ================= ESTADOS ================= */
+const STATE={MENU:0,PLAY:1,PAUSE:2};
+let gameState=STATE.MENU;
 
-let bestScore=Number(localStorage.getItem('space-survivor-best')||0);
-bestEl.textContent='Best: '+bestScore;
+/* ================= CANVAS ================= */
+const canvas=document.getElementById("game");
+const ctx=canvas.getContext("2d");
 
-let player={x:200,y:300,r:14,speed:5,shield:0,shot:1};
-let bullets=[],enemies=[],stars=[],powerups=[],particles=[],bosses=[];
-let score=0,lives=3,running=false,paused=false,shake=0;
-let shootCooldown=0,soundOn=true,discordOn=true;
-let difficulty='Normal';
-let enemySpeed=2,enemySpawnRate=0.03,playerSpeed=5;
-let level=1,scoreSinceLevel=0;
-
-/* ================= SOUNDS ================= */
-const sounds={
-  shoot:new Audio('https://assets.mixkit.co/sfx/preview/mixkit-laser-weapon-shot-1681.mp3'),
-  hit:new Audio('https://assets.mixkit.co/sfx/preview/mixkit-arcade-game-explosion-2759.mp3'),
-  power:new Audio('https://assets.mixkit.co/sfx/preview/mixkit-achievement-bell-600.mp3'),
-  boss:new Audio('https://assets.mixkit.co/sfx/preview/mixkit-arcade-retro-game-over-2102.mp3')
-};
-
-/* ================= INPUT ================= */
-const keys={};
-window.addEventListener('keydown',e=>keys[e.key.toLowerCase()]=true);
-window.addEventListener('keyup',e=>keys[e.key.toLowerCase()]=false);
-
-/* ================= TOUCH ================= */
-let touchStart=null;
-canvas.addEventListener('touchstart', e=>{e.preventDefault(); touchStart=e.touches[0];});
-canvas.addEventListener('touchmove', e=>{
-  e.preventDefault(); if(!touchStart) return;
-  const touch=e.touches[0];
-  const dx=touch.clientX-touchStart.clientX;
-  const dy=touch.clientY-touchStart.clientY;
-  const threshold=5;
-  keys['arrowright']=dx>threshold;
-  keys['arrowleft']=dx<-threshold;
-  keys['arrowdown']=dy>threshold;
-  keys['arrowup']=dy<-threshold;
-});
-canvas.addEventListener('touchend', e=>{keys['arrowright']=keys['arrowleft']=keys['arrowup']=keys['arrowdown']=false; touchStart=null;});
-
-/* ================= MOBILE BUTTONS ================= */
-mobileShootBtn.addEventListener('touchstart', e=>{e.preventDefault(); keys[' ']=true;});
-mobileShootBtn.addEventListener('touchend', e=>{e.preventDefault(); keys[' ']=false;});
-mobilePauseBtn.addEventListener('touchstart', e=>{e.preventDefault(); togglePause();});
-
-/* ================= GAMEPAD ================= */
-function pollGamepad(){
-  const gp=navigator.getGamepads()[0];
-  if(gp){
-    keys['arrowup']=gp.axes[1]<-0.5;
-    keys['arrowdown']=gp.axes[1]>0.5;
-    keys['arrowleft']=gp.axes[0]<-0.5;
-    keys['arrowright']=gp.axes[0]>0.5;
-    keys[' ']=gp.buttons[0].pressed;
-    if(gp.buttons[9].pressed) togglePause();
-  }
-  requestAnimationFrame(pollGamepad);
-}
-pollGamepad();
-
-/* ================= DIFFICULTY ================= */
-function setDifficulty(level){
-  difficulty=level;
-  diffEl.textContent='Dificuldade: '+difficulty;
-  switch(level){
-    case 'Easy': enemySpeed=1.5; enemySpawnRate=0.02; playerSpeed=6; break;
-    case 'Normal': enemySpeed=2; enemySpawnRate=0.03; playerSpeed=5; break;
-    case 'Hard': enemySpeed=3; enemySpawnRate=0.04; playerSpeed=4; break;
-    case 'Expert': enemySpeed=4; enemySpawnRate=0.06; playerSpeed=3; break;
-  }
-  player.speed=playerSpeed;
-}
+/* ================= PLAYER ================= */
+const player={x:200,y:500,r:14,speed:4};
 
 /* ================= GAME ================= */
-function startGame(){
-  score=0;lives=3;bullets=[];enemies=[];powerups=[];particles=[];bosses=[];
-  player.x=200; player.y=300; player.shield=0; player.shot=1;
-  level=1; levelEl.textContent='Nível: '+level;
-  scoreSinceLevel=0;
-  running=true; paused=false; overlay.style.display='none';
-  if(window.innerWidth<=768){ mobileShootBtn.style.display='flex'; mobilePauseBtn.style.display='flex'; }
-  if(window.innerWidth>768) initDiscordRPC();
-  showIntro();
-}
+let bullets=[],enemies=[];
+let stars1=[],stars2=[],stars3=[];
+let score=0,level=1;
+let cooldown=0;
 
-/* ================= INTRO ================= */
-function showIntro(){
-  overlay.innerHTML = `<div class="menu">
-    <h1>SPACE SURVIVOR</h1>
-    <p>Escolha a dificuldade:</p>
-    <button onclick="setDifficulty('Easy'); startLevel()">Easy</button>
-    <button onclick="setDifficulty('Normal'); startLevel()">Normal</button>
-    <button onclick="setDifficulty('Hard'); startLevel()">Hard</button>
-    <button onclick="setDifficulty('Expert'); startLevel()">Expert</button>
-  </div>`;
-  overlay.style.display='flex';
-}
+/* ================= INPUT ================= */
+const input={left:false,right:false,up:false,down:false,shoot:false};
 
-function startLevel(){overlay.style.display='none';}
+/* ================= KEYBOARD ================= */
+addEventListener("keydown",e=>{
+  if(e.key==="ArrowLeft"||e.key==="a") input.left=true;
+  if(e.key==="ArrowRight"||e.key==="d") input.right=true;
+  if(e.key==="ArrowUp"||e.key==="w") input.up=true;
+  if(e.key==="ArrowDown"||e.key==="s") input.down=true;
+  if(e.key===" ") input.shoot=true;
+  if(e.key==="Escape") togglePause();
+});
+addEventListener("keyup",e=>{
+  if(e.key==="ArrowLeft"||e.key==="a") input.left=false;
+  if(e.key==="ArrowRight"||e.key==="d") input.right=false;
+  if(e.key==="ArrowUp"||e.key==="w") input.up=false;
+  if(e.key==="ArrowDown"||e.key==="s") input.down=false;
+  if(e.key===" ") input.shoot=false;
+});
 
-/* ================= UPGRADES ================= */
-const upgradesList=[
-  {name:"Vida extra",apply:()=>lives=Math.min(5,lives+1)},
-  {name:"Tiro duplo",apply:()=>player.shot=2},
-  {name:"Escudo",apply:()=>player.shield=3},
-  {name:"Velocidade +1",apply:()=>player.speed+=1}
-];
+/* ================= MOBILE ================= */
+shootBtn.ontouchstart=e=>{e.preventDefault();input.shoot=true;}
+shootBtn.ontouchend=e=>{e.preventDefault();input.shoot=false;}
+pauseBtn.onclick=()=>togglePause();
 
-function showUpgradeMenu(){
-  paused=true;
-  let html='<div class="menu"><h1>Escolha um Upgrade</h1>';
-  const options=[...upgradesList].sort(()=>0.5-Math.random()).slice(0,3);
-  options.forEach((u,i)=>html+=`<button onclick="chooseUpgrade(${i})">${u.name}</button>`);
-  html+='</div>';
+/* ================= JOYSTICK ================= */
+const joystick=document.getElementById("joystick");
+const stick=document.getElementById("stick");
+
+joystick.addEventListener("touchmove",e=>{
+  const r=40;
+  const rect=joystick.getBoundingClientRect();
+  const x=e.touches[0].clientX-rect.left-60;
+  const y=e.touches[0].clientY-rect.top-60;
+  stick.style.transform=`translate(${x}px,${y}px)`;
+  input.left=x<-15; input.right=x>15;
+  input.up=y<-15; input.down=y>15;
+});
+joystick.addEventListener("touchend",()=>{
+  stick.style.transform="translate(0,0)";
+  input.left=input.right=input.up=input.down=false;
+});
+
+/* ================= MENU ================= */
+const overlay=document.getElementById("overlay");
+
+function showMenu(html){
   overlay.innerHTML=html;
-  overlay.style.display='flex';
-  window.currentOptions=options;
+  overlay.style.display="flex";
+}
+function hideMenu(){overlay.style.display="none";}
+
+showMenu(`
+<div class="menu">
+  <h1>SPACE SURVIVOR</h1>
+  <p>Sobreviva no espaço 🚀</p>
+  <button onclick="startGame()">JOGAR</button>
+</div>`);
+
+/* ================= START ================= */
+function startGame(){
+  bullets=[];enemies=[];
+  score=0;level=1;
+  gameState=STATE.PLAY;
+  hideMenu();
+  shootBtn.style.display=pauseBtn.style.display=joystick.style.display="block";
 }
 
-function chooseUpgrade(index){
-  window.currentOptions[index].apply();
-  overlay.style.display='none';
-  paused=false;
+/* ================= PAUSE (BUG CORRIGIDO) ================= */
+function togglePause(){
+  if(gameState===STATE.PLAY){
+    gameState=STATE.PAUSE;
+    showMenu(`
+      <div class="menu">
+        <h1>PAUSE</h1>
+        <button onclick="resume()">Continuar</button>
+        <button onclick="startGame()">Reiniciar</button>
+      </div>
+    `);
+  }else if(gameState===STATE.PAUSE){
+    resume();
+  }
+}
+function resume(){
+  gameState=STATE.PLAY;
+  hideMenu();
 }
 
 /* ================= SPAWN ================= */
-function spawnStar(){stars.push({x:Math.random()*400,y:-10,r:Math.random()*2+1,s:Math.random()*1.5+.5});}
-function spawnEnemy(){enemies.push({x:Math.random()*370+15,y:-30,r:14,s:enemySpeed,zig:Math.random()<.5});}
-function spawnPower(x,y){const t=Math.random(); powerups.push({x,y,r:8,s:2,type:t<.33?'double':t<.66?'shield':'life'});}
-function spawnBoss(){bosses.push({x:200,y:-60,r:50,health:50+(level*20),s:1.5+level/5}); if(soundOn) sounds.boss.play();}
-
-/* ================= SHOOT & COLLISIONS ================= */
-function shoot(){if(shootCooldown>0) return; shootCooldown=12; if(soundOn){sounds.shoot.currentTime=0; sounds.shoot.play();}
-  for(let i=0;i<player.shot;i++) bullets.push({x:player.x+(i-0.5)*10,y:player.y-20,s:8});
+function spawnEnemy(){
+  enemies.push({x:Math.random()*360+20,y:-20,r:14});
 }
-function explode(x,y){for(let i=0;i<12;i++) particles.push({x,y,vx:(Math.random()-.5)*4,vy:(Math.random()-.5)*4,l:30});}
-function togglePause(){paused=!paused; overlay.style.display=paused?'flex':'none';}
+function shoot(){
+  if(cooldown>0) return;
+  cooldown=15;
+  bullets.push({x:player.x,y:player.y});
+}
 
 /* ================= UPDATE ================= */
 function update(){
-  if(!running || paused) return;
+  if(gameState!==STATE.PLAY) return;
 
-  if(keys['arrowleft']||keys['a']) player.x-=player.speed;
-  if(keys['arrowright']||keys['d']) player.x+=player.speed;
-  if(keys['arrowup']||keys['w']) player.y-=player.speed;
-  if(keys['arrowdown']||keys['s']) player.y+=player.speed;
-  if(keys[' ']) shoot(); shootCooldown=Math.max(0,shootCooldown-1);
+  if(input.left) player.x-=player.speed;
+  if(input.right) player.x+=player.speed;
+  if(input.up) player.y-=player.speed;
+  if(input.down) player.y+=player.speed;
+  if(input.shoot) shoot();
 
-  player.x=Math.max(player.r,Math.min(canvas.width-player.r,player.x));
-  player.y=Math.max(player.r,Math.min(canvas.height-player.r,player.y));
+  player.x=Math.max(player.r,Math.min(400-player.r,player.x));
+  player.y=Math.max(player.r,Math.min(600-player.r,player.y));
 
-  bullets.forEach(b=>b.y-=b.s); bullets=bullets.filter(b=>b.y>-20);
-  enemies.forEach(e=>{ e.y+=e.s; if(e.zig) e.x+=Math.sin(e.y/30)*2 }); enemies=enemies.filter(e=>e.y<650);
-  stars.forEach(s=>s.y+=s.s); stars=stars.filter(s=>s.y<620);
-  powerups.forEach(p=>p.y+=p.s); powerups=powerups.filter(p=>p.y<620);
+  bullets.forEach(b=>b.y-=8);
+  enemies.forEach(e=>e.y+=2);
 
-  enemies.forEach((e,i)=>{if(Math.hypot(player.x-e.x,player.y-e.y)<player.r+e.r){explode(e.x,e.y); enemies.splice(i,1); shake=10; if(player.shield>0) player.shield--; else if(--lives<=0) endGame();}});
-  bullets.forEach((b,bi)=>{enemies.forEach((e,ei)=>{if(Math.hypot(b.x-e.x,b.y-e.y)<e.r){if(soundOn)sounds.hit.play();explode(e.x,e.y); enemies.splice(ei,1); bullets.splice(bi,1); score+=10; scoreSinceLevel+=10; if(Math.random()<0.3) spawnPower(e.x,e.y);}})});
-  powerups.forEach((p,pi)=>{if(Math.hypot(player.x-p.x,player.y-p.y)<player.r+p.r){if(soundOn)sounds.power.play(); if(p.type==='life') lives=Math.min(5,lives+1); if(p.type==='double') player.shot=2; if(p.type==='shield') player.shield=3; powerups.splice(pi,1);}});
+  bullets=bullets.filter(b=>b.y>-10);
+  enemies=enemies.filter(e=>e.y<620);
 
-  // Level up somente quando scoreSinceLevel >= 100 e não toda hora
-  if(scoreSinceLevel>=100){
-    level++; levelEl.textContent='Nível: '+level; scoreSinceLevel=0;
-    spawnBoss();
-    showUpgradeMenu();
-  }
+  if(Math.random()<.02) spawnEnemy();
 
-  score++; scoreEl.textContent='Score: '+score;
-  livesEl.textContent='Lives: '+lives;
-
-  if(Math.random()<0.08) spawnStar();
-  if(Math.random()<enemySpawnRate) spawnEnemy();
-
-  bosses.forEach((b,i)=>{
-    b.y+=b.s; b.x+=Math.sin(b.y/50)*2;
-    if(Math.hypot(player.x-b.x,player.y-b.y)<player.r+b.r){if(player.shield>0) player.shield--; else if(--lives<=0) endGame();}
-    bullets.forEach((bu,bi)=>{if(Math.hypot(bu.x-b.x,bu.y-b.y)<b.r){b.health--; bullets.splice(bi,1); if(b.health<=0){bosses.splice(i,1); score+=100; showUpgradeMenu();}}});
+  enemies.forEach((e,ei)=>{
+    bullets.forEach((b,bi)=>{
+      if(Math.hypot(e.x-b.x,e.y-b.y)<e.r){
+        enemies.splice(ei,1);
+        bullets.splice(bi,1);
+        score+=10;
+        if(score%200===0) level++;
+      }
+    });
   });
+
+  if(cooldown>0) cooldown--;
+
+  hudScore.textContent="Score: "+score;
+  hudLevel.textContent="Nível: "+level;
+}
+
+/* ================= BACKGROUND (SPACE) ================= */
+function spawnStar(arr,speed){
+  arr.push({x:Math.random()*400,y:-10,s:speed});
+}
+function updateStars(){
+  if(Math.random()<.1) spawnStar(stars1,1);
+  if(Math.random()<.07) spawnStar(stars2,2);
+  if(Math.random()<.04) spawnStar(stars3,3);
+
+  stars1.forEach(s=>s.y+=1);
+  stars2.forEach(s=>s.y+=2);
+  stars3.forEach(s=>s.y+=3);
+
+  stars1=stars1.filter(s=>s.y<620);
+  stars2=stars2.filter(s=>s.y<620);
+  stars3=stars3.filter(s=>s.y<620);
 }
 
 /* ================= DRAW ================= */
 function draw(){
   ctx.clearRect(0,0,400,600);
-  stars.forEach(s=>{ctx.fillStyle='#94a3b8'; ctx.beginPath(); ctx.arc(s.x,s.y,s.r,0,Math.PI*2); ctx.fill();});
-  ctx.fillStyle='#38bdf8'; ctx.beginPath(); ctx.arc(player.x,player.y,player.r,0,Math.PI*2); ctx.fill();
-  if(player.shield>0){ctx.strokeStyle='#22c55e'; ctx.lineWidth=3; ctx.beginPath(); ctx.arc(player.x,player.y,player.r+6,0,Math.PI*2); ctx.stroke();}
-  bullets.forEach(b=>{ctx.fillStyle='#e5e7eb'; ctx.fillRect(b.x-2,b.y,4,10);});
-  enemies.forEach(e=>{ctx.fillStyle='#fb7185'; ctx.beginPath(); ctx.arc(e.x,e.y,e.r,0,Math.PI*2); ctx.fill();});
-  bosses.forEach(b=>{ctx.fillStyle='#facc15'; ctx.beginPath(); ctx.arc(b.x,b.y,b.r,0,Math.PI*2); ctx.fill();});
-  powerups.forEach(p=>{ctx.fillStyle='#22c55e'; ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,Math.PI*2); ctx.fill();});
-  particles.forEach(pt=>{ctx.fillStyle='#facc15'; ctx.fillRect(pt.x,pt.y,2,2);});
+
+  updateStars();
+  ctx.fillStyle="#555"; stars1.forEach(s=>ctx.fillRect(s.x,s.y,1,1));
+  ctx.fillStyle="#999"; stars2.forEach(s=>ctx.fillRect(s.x,s.y,2,2));
+  ctx.fillStyle="#fff"; stars3.forEach(s=>ctx.fillRect(s.x,s.y,2,2));
+
+  ctx.fillStyle="#38bdf8";
+  ctx.beginPath();ctx.arc(player.x,player.y,player.r,0,7);ctx.fill();
+
+  ctx.fillStyle="#fff";
+  bullets.forEach(b=>ctx.fillRect(b.x-2,b.y,4,10));
+
+  ctx.fillStyle="#ef4444";
+  enemies.forEach(e=>{
+    ctx.beginPath();ctx.arc(e.x,e.y,e.r,0,7);ctx.fill();
+  });
 }
 
 /* ================= LOOP ================= */
-function loop(){update(); draw(); requestAnimationFrame(loop);}
+function loop(){
+  update();
+  draw();
+  requestAnimationFrame(loop);
+}
 loop();
-
-/* ================= SERVICE WORKER ================= */
-if("serviceWorker" in navigator) navigator.serviceWorker.register("service-worker.js");
-
-/* ================= DISCORD RPC ================= */
-function initDiscordRPC(){if(!discordOn||/Mobi|Android/i.test(navigator.userAgent))return; console.log("Discord RPC conectado (Desktop)");}
-
-/* ================= MENU BUTTONS ================= */
-document.getElementById('playBtn').onclick=startGame;
-document.getElementById('optionsBtn').onclick=()=>{overlay.style.display='flex'; overlay.innerHTML='<div class="menu"><h1>OPÇÕES</h1><button onclick="overlay.style.display=\'none\'">Voltar</button></div>'};
-document.getElementById('exitBtn').onclick=()=>{alert("Obrigado por jogar!"); window.close();}
-window.addEventListener('keydown', e=>{if(e.key==='Escape') togglePause();});
 </script>
 </body>
 </html>
