@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <title>Space Survivor</title>
-<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,user-scalable=no">
 
 <style>
 *{margin:0;padding:0;box-sizing:border-box;font-family:Arial}
@@ -12,117 +12,58 @@ body{background:#000;color:#fff;overflow:hidden}
 canvas{display:block;margin:auto;background:#020617;border-radius:16px}
 
 /* HUD */
-.hud{
-  position:absolute;top:10px;width:100%;
-  display:flex;justify-content:center;gap:10px;z-index:5
-}
-.hud span{
-  background:rgba(0,0,0,.6);
-  padding:6px 14px;border-radius:999px;font-size:14px
-}
+.hud{position:absolute;top:10px;width:100%;display:flex;justify-content:center;gap:10px;z-index:5}
+.hud span{background:rgba(0,0,0,.6);padding:6px 14px;border-radius:999px;font-size:14px}
 
 /* OVERLAY */
-.overlay{
-  position:absolute;inset:0;
-  display:flex;align-items:center;justify-content:center;
-  background:rgba(0,0,0,.85);
-  z-index:10;
-  animation:fadeIn .3s ease;
-}
+.overlay{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.85);z-index:10;animation:fadeIn .3s ease;}
 @keyframes fadeIn{from{opacity:0}to{opacity:1}}
 
+/* MENU BASE */
 .menu{
-  background:#020617;
-  border-radius:20px;
-  padding:26px;
-  width:300px;
-  text-align:center;
-  box-shadow:0 0 40px rgba(56,189,248,.4);
-  animation:menuSlide .4s ease;
+  background:#020617;border-radius:20px;padding:26px;width:300px;text-align:center;
+  box-shadow:0 0 40px rgba(56,189,248,.4);animation:menuIn .35s ease
 }
-@keyframes menuSlide{
-  from{transform:translateY(30px);opacity:0}
-  to{transform:translateY(0);opacity:1}
-}
-
+@keyframes menuIn{from{transform:translateY(30px);opacity:0}to{transform:translateY(0);opacity:1}}
 .menu h1{margin-bottom:10px;color:#38bdf8}
 .menu button,input{
-  width:100%;
-  margin:6px 0;
-  padding:12px;
-  border:none;
-  border-radius:999px;
-  font-weight:bold;
+  width:100%;margin:6px 0;padding:12px;border:none;border-radius:999px;font-weight:bold
 }
-.menu button{
-  cursor:pointer;
-  background:#38bdf8;
-  color:#020617;
-  transition:.2s;
-}
-.menu button:hover{
-  transform:scale(1.05);
-  box-shadow:0 0 10px #38bdf8;
-}
+.menu button{background:#38bdf8;color:#020617;cursor:pointer;transition:.2s}
+.menu button:hover{transform:scale(1.05);box-shadow:0 0 10px #38bdf8}
 .menu input{text-align:center}
 
 /* INTRO */
-#intro{
-  position:absolute;inset:0;
-  display:flex;align-items:center;justify-content:center;
-  flex-direction:column;
-  background:#020617;
-  z-index:20;
-}
-#intro h1{
-  font-size:42px;
-  color:#38bdf8;
-  animation:introZoom 1.5s ease-out infinite alternate;
-}
-@keyframes introZoom{
-  from{transform:scale(.95)}
-  to{transform:scale(1.05)}
-}
+#intro{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;background:#020617;z-index:20;transition:all .6s ease}
+#intro h1{font-size:42px;color:#38bdf8;animation:introPulse 1.5s ease-in-out infinite}
+@keyframes introPulse{0%{transform:scale(.95)}50%{transform:scale(1.05)}100%{transform:scale(.95)}}
 
 /* MOBILE */
 #shootBtn,#pauseBtn{
-  position:absolute;width:80px;height:80px;
-  border-radius:50%;border:none;font-weight:bold;
-  display:none;z-index:6
+  position:absolute;width:80px;height:80px;border-radius:50%;border:none;font-weight:bold;display:none;z-index:6
 }
 #shootBtn{right:20px;bottom:20px;background:#ef4444;color:#fff}
 #pauseBtn{left:20px;top:10px;background:#38bdf8;color:#000}
 
 /* JOYSTICK */
-#joystick{
-  position:absolute;bottom:20px;left:20px;
-  width:120px;height:120px;
-  border-radius:50%;
-  background:rgba(255,255,255,.08);
-  display:none;z-index:6
-}
-#stick{
-  width:50px;height:50px;border-radius:50%;
-  background:#38bdf8;
-  position:absolute;left:35px;top:35px
-}
+#joystick{position:absolute;bottom:20px;left:20px;width:120px;height:120px;border-radius:50%;background:rgba(255,255,255,.08);display:none;z-index:6}
+#stick{width:50px;height:50px;border-radius:50%;background:#38bdf8;position:absolute;left:35px;top:35px}
+
+/* VISUAL UPGRADES */
+.aura{box-shadow:0 0 25px rgba(56,189,248,.6),0 0 50px rgba(56,189,248,.3);}
 </style>
 </head>
 
 <body>
-
-<div id="intro">
-  <h1>SPACE SURVIVOR</h1>
-  <p>Toque para começar</p>
-</div>
+<div id="intro"><h1>SPACE SURVIVOR</h1><p>Toque para começar</p></div>
 
 <div class="hud" id="hud">
   <span id="hudScore">Score: 0</span>
+  <span id="hudLevel">Nível: 1</span>
   <span id="hudCoins">Moedas: 0</span>
 </div>
 
 <div id="overlay" class="overlay"></div>
-
 <canvas id="game" width="400" height="600"></canvas>
 
 <button id="shootBtn">ATIRAR</button>
@@ -130,46 +71,45 @@ canvas{display:block;margin:auto;background:#020617;border-radius:16px}
 <div id="joystick"><div id="stick"></div></div>
 
 <script>
-/* SAVE */
+/* ================= SAVE ================= */
 const save=JSON.parse(localStorage.getItem("spaceSave")||"{}");
-save.coins??=0;
-save.skin??="#38bdf8";
-save.name??="Jogador";
+save.coins??=0; save.skin??="#38bdf8"; save.name??="Jogador"; save.level??=1; save.achievements??={};
 localStorage.setItem("spaceSave",JSON.stringify(save));
 
-/* STATE */
-const STATE={MENU:0,PLAY:1};
+/* ================= STATE ================= */
+const STATE={MENU:0,PLAY:1,PAUSE:2};
 let gameState=STATE.MENU;
 
-/* CANVAS */
+/* ================= CANVAS ================= */
 const canvas=document.getElementById("game");
 const ctx=canvas.getContext("2d");
 
-/* STARS */
-let stars=[...Array(120)].map(()=>({x:Math.random()*400,y:Math.random()*600,s:Math.random()*2+1}));
+/* ================= STARS ================= */
+let stars=[...Array(140)].map(()=>({x:Math.random()*400,y:Math.random()*600,s:Math.random()*2+1}));
 
-/* PLAYER */
-const player={x:200,y:500,r:14,speed:4,skin:save.skin};
+/* ================= PLAYER ================= */
+const player={x:200,y:500,r:14,speed:4,skin:save.skin,trail:[]};
 
-/* GAME */
+/* ================= GAME ================= */
 let bullets=[],enemies=[],explosions=[];
 let score=0,coins=save.coins,cooldown=0;
 
-/* INPUT */
+/* ================= INPUT ================= */
 const input={x:0,y:0,shoot:false};
+const keys={};
 
-/* INTRO */
+/* ================= INTRO ================= */
 intro.onclick=()=>{
-  intro.style.opacity=0;
-  setTimeout(()=>intro.remove(),500);
-  mainMenu();
+  intro.style.transform="translateY(40px)"; intro.style.opacity="0";
+  setTimeout(()=>intro.remove(),600); setTimeout(mainMenu,600);
 };
 
-/* MENUS */
+/* ================= MENUS ================= */
 const overlay=document.getElementById("overlay");
-function showMenu(html){overlay.innerHTML=html;overlay.style.display="flex"}
-function hideMenu(){overlay.style.display="none"}
+function showMenu(h){overlay.innerHTML=h;overlay.style.display="flex";}
+function hideMenu(){overlay.style.display="none";}
 
+/* MAIN MENU */
 function mainMenu(){
 showMenu(`
 <div class="menu">
@@ -177,80 +117,111 @@ showMenu(`
 <input value="${save.name}" oninput="save.name=this.value;saveGame()">
 <button onclick="startGame()">JOGAR</button>
 <button onclick="shopMenu()">LOJA</button>
+<button onclick="achievementsMenu()">CONQUISTAS</button>
 <button onclick="rankingMenu()">RANKING</button>
+<button onclick="optionsMenu()">OPÇÕES</button>
 <button onclick="creditsMenu()">CRÉDITOS</button>
-</div>`);
-}
+</div>`);}
 
+/* SHOP MENU */
 function shopMenu(){
 showMenu(`
 <div class="menu">
-<h1>SKINS</h1>
-<button onclick="player.skin='#38bdf8'">AZUL</button>
-<button onclick="player.skin='#22c55e'">VERDE</button>
-<button onclick="player.skin='#facc15'">AMARELO</button>
+<h1>LOJA / SKINS</h1>
+<button onclick="player.skin='#38bdf8';saveGame()">AZUL</button>
+<button onclick="player.skin='#22c55e';saveGame()">VERDE</button>
+<button onclick="player.skin='#facc15';saveGame()">AMARELO</button>
 <button onclick="mainMenu()">VOLTAR</button>
-</div>`);
-}
+</div>`);}
 
+/* ACHIEVEMENTS */
+function achievementsMenu(){
+showMenu(`
+<div class="menu">
+<h1>CONQUISTAS</h1>
+<p>${score>=100?"🏆 Veterano":"❌ Veterano"}</p>
+<button onclick="mainMenu()">VOLTAR</button>
+</div>`);}
+
+/* RANKING LOCAL */
 function rankingMenu(){
 showMenu(`
 <div class="menu">
 <h1>RANKING LOCAL</h1>
 <p>${save.name} - ${score}</p>
 <button onclick="mainMenu()">VOLTAR</button>
-</div>`);
-}
+</div>`);}
 
+/* OPTIONS */
+function optionsMenu(){
+showMenu(`
+<div class="menu">
+<h1>OPÇÕES</h1>
+<button onclick="toggleHud()">HUD: ${save.options?.hud!==false?"ON":"OFF"}</button>
+<button onclick="mainMenu()">VOLTAR</button>
+</div>`);}
+
+function toggleHud(){save.options??={}; save.options.hud=!save.options.hud;document.getElementById("hud").style.display=save.options.hud?"flex":"none";saveGame();optionsMenu();}
+
+/* CREDITS */
 function creditsMenu(){
 showMenu(`
 <div class="menu">
 <h1>CRÉDITOS</h1>
-<p>Feito com ❤️</p>
+<p>Game feito com ❤️</p>
+<b>Desenvolvedor: Ander</b>
 <button onclick="mainMenu()">VOLTAR</button>
-</div>`);
-}
+</div>`);}
 
-/* START */
+/* START GAME */
 function startGame(){
   bullets=[];enemies=[];explosions=[];
   score=0;coins=save.coins;
   gameState=STATE.PLAY;
   hideMenu();
-  shootBtn.style.display=joystick.style.display="block";
+  shootBtn.style.display=joystick.style.display=pauseBtn.style.display="block";
 }
 
 /* SAVE */
-function saveGame(){
-save.coins=coins;
-localStorage.setItem("spaceSave",JSON.stringify(save));
-}
+function saveGame(){save.coins=coins;save.skin=player.skin;localStorage.setItem("spaceSave",JSON.stringify(save));}
+
+/* PAUSE MENU */
+pauseBtn.onclick=pauseGame;
+function pauseGame(){if(gameState!==STATE.PLAY)return;gameState=STATE.PAUSE;
+showMenu(`<div class="menu">
+<h1>PAUSADO</h1>
+<button onclick="resumeGame()">CONTINUAR</button>
+<button onclick="mainMenu()">MENU</button>
+</div>`);}
+function resumeGame(){gameState=STATE.PLAY;hideMenu();}
 
 /* CONTROLS */
+document.addEventListener("keydown",e=>{keys[e.key]=true;if(e.key==="Escape")pauseGame();if(e.key===" ") input.shoot=true;});
+document.addEventListener("keyup",e=>{keys[e.key]=false;if(e.key===" ") input.shoot=false;});
+
 shootBtn.ontouchstart=e=>{e.preventDefault();input.shoot=true}
 shootBtn.ontouchend=e=>{e.preventDefault();input.shoot=false}
 
 joystick.ontouchmove=e=>{
+e.preventDefault();
 const r=joystick.getBoundingClientRect();
 const t=e.touches[0];
-input.x=Math.max(-1,Math.min(1,(t.clientX-(r.left+r.width/2))/30));
-input.y=Math.max(-1,Math.min(1,(t.clientY-(r.top+r.height/2))/30));
-}
+input.x=(t.clientX-(r.left+r.width/2))/30;
+input.y=(t.clientY-(r.top+r.height/2))/30;
+};
 joystick.ontouchend=()=>input.x=input.y=0;
 
 /* UPDATE */
-function update(){
-if(gameState!==STATE.PLAY)return;
+function update(){if(gameState!==STATE.PLAY)return;
 
-player.x+=input.x*player.speed;
-player.y+=input.y*player.speed;
+player.x+=input.x*player.speed; player.y+=input.y*player.speed;
 player.x=Math.max(20,Math.min(380,player.x));
 player.y=Math.max(20,Math.min(580,player.y));
 
-if(input.shoot&&cooldown<=0){
-cooldown=12;
-bullets.push({x:player.x,y:player.y});
-}
+player.trail.push({x:player.x,y:player.y,t:15});
+player.trail=player.trail.filter(p=>p.t-->0);
+
+if(input.shoot&&cooldown<=0){cooldown=12; bullets.push({x:player.x,y:player.y});}
 cooldown--;
 
 if(Math.random()<0.03) enemies.push({x:Math.random()*360+20,y:-20,r:14});
@@ -258,44 +229,41 @@ if(Math.random()<0.03) enemies.push({x:Math.random()*360+20,y:-20,r:14});
 bullets.forEach(b=>b.y-=8);
 enemies.forEach(e=>e.y+=2);
 
-enemies.forEach((e,ei)=>{
-bullets.forEach((b,bi)=>{
-if(Math.hypot(e.x-b.x,e.y-b.y)<e.r){
-enemies.splice(ei,1);
-bullets.splice(bi,1);
-explosions.push({x:e.x,y:e.y,t:20});
-score+=10;coins++;
-}
-});
-});
+enemies.forEach((e,ei)=>{bullets.forEach((b,bi)=>{if(Math.hypot(e.x-b.x,e.y-b.y)<e.r){enemies.splice(ei,1);bullets.splice(bi,1);explosions.push({x:e.x,y:e.y,t:20});score+=10;coins++;}});});
 
 bullets=bullets.filter(b=>b.y>-10);
 enemies=enemies.filter(e=>e.y<620);
-explosions=explosions.filter(e=>e.t-- >0);
+explosions=explosions.filter(e=>e.t-->0);
 
 hudScore.textContent="Score: "+score;
 hudCoins.textContent="Moedas: "+coins;
-saveGame();
-}
+saveGame();}
 
 /* DRAW */
 function draw(){
 ctx.clearRect(0,0,400,600);
-ctx.fillStyle="#888";
-stars.forEach(s=>{
-s.y+=s.s*.3;if(s.y>600)s.y=0;
-ctx.fillRect(s.x,s.y,2,2);
-});
-ctx.fillStyle=player.skin;
-ctx.beginPath();ctx.arc(player.x,player.y,player.r,0,7);ctx.fill();
-ctx.fillStyle="#fff";
-bullets.forEach(b=>ctx.fillRect(b.x-2,b.y,4,10));
-ctx.fillStyle="#ef4444";
-enemies.forEach(e=>{ctx.beginPath();ctx.arc(e.x,e.y,e.r,0,7);ctx.fill()});
-explosions.forEach(ex=>{
-ctx.strokeStyle=`rgba(255,255,255,${ex.t/20})`;
-ctx.beginPath();ctx.arc(ex.x,ex.y,20-ex.t,0,7);ctx.stroke();
-});
+
+/* stars */
+ctx.fillStyle="#888"; stars.forEach(s=>{s.y+=s.s*.3;if(s.y>600)s.y=0;ctx.fillRect(s.x,s.y,2,2);});
+
+/* trail */
+player.trail.forEach(p=>{ctx.fillStyle="rgba(56,189,248,.2)";ctx.beginPath();ctx.arc(p.x,p.y,player.r,0,7);ctx.fill();});
+
+/* aura */
+ctx.shadowBlur=20; ctx.shadowColor=player.skin;
+
+/* player */
+ctx.fillStyle=player.skin; ctx.beginPath();ctx.arc(player.x,player.y,player.r,0,7);ctx.fill();
+ctx.shadowBlur=0;
+
+/* bullets */
+ctx.fillStyle="#fff"; bullets.forEach(b=>ctx.fillRect(b.x-2,b.y,4,10));
+
+/* enemies */
+ctx.fillStyle="#ef4444"; enemies.forEach(e=>{ctx.beginPath();ctx.arc(e.x,e.y,e.r,0,7);ctx.fill();});
+
+/* explosions */
+explosions.forEach(ex=>{ctx.strokeStyle=`rgba(255,255,255,${ex.t/20})`;ctx.beginPath();ctx.arc(ex.x,ex.y,20-ex.t,0,7);ctx.stroke();});
 }
 
 /* LOOP */
