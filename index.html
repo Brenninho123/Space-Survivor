@@ -11,7 +11,7 @@ canvas{display:block;margin:auto;background:#020617;border-radius:16px}
 
 /* HUD */
 .hud{
-  position:absolute;top:12px;width:100%;
+  position:absolute;top:10px;width:100%;
   display:flex;justify-content:center;gap:10px;z-index:5
 }
 .hud span{
@@ -29,11 +29,11 @@ canvas{display:block;margin:auto;background:#020617;border-radius:16px}
   background:#020617;
   border-radius:20px;
   padding:26px;
-  width:280px;
+  width:300px;
   text-align:center;
   box-shadow:0 0 40px rgba(56,189,248,.4)
 }
-.menu h1{margin-bottom:14px}
+.menu h1{margin-bottom:10px}
 .menu button{
   width:100%;
   margin:6px 0;
@@ -44,19 +44,15 @@ canvas{display:block;margin:auto;background:#020617;border-radius:16px}
   cursor:pointer;
   background:#38bdf8;
   color:#020617;
-  transition:.2s
 }
-.menu button:hover{filter:brightness(1.1)}
 
 /* MOBILE */
 #shootBtn,#pauseBtn{
   position:absolute;bottom:20px;
   width:80px;height:80px;
   border-radius:50%;
-  border:none;
-  font-weight:bold;
-  display:none;
-  z-index:6
+  border:none;font-weight:bold;
+  display:none;z-index:6
 }
 #shootBtn{right:20px;background:#ef4444;color:#fff}
 #pauseBtn{left:20px;background:#38bdf8;color:#000}
@@ -93,27 +89,33 @@ canvas{display:block;margin:auto;background:#020617;border-radius:16px}
 <button id="shootBtn">ATIRAR</button>
 <button id="pauseBtn">PAUSE</button>
 
-<div id="joystick">
-  <div id="stick"></div>
-</div>
+<div id="joystick"><div id="stick"></div></div>
 
 <script>
 /* ================= ESTADOS ================= */
-const STATE={MENU:0,PLAY:1,PAUSE:2};
+const STATE={MENU:0,PLAY:1,PAUSE:2,UPGRADE:3};
 let gameState=STATE.MENU;
 
 /* ================= CANVAS ================= */
 const canvas=document.getElementById("game");
 const ctx=canvas.getContext("2d");
 
+/* ================= SAVE ================= */
+const save=JSON.parse(localStorage.getItem("spaceSave")||"{}");
+
 /* ================= PLAYER ================= */
-const player={x:200,y:500,r:14,speed:4};
+const player={
+  x:200,y:500,r:14,
+  speed:4,shot:1,
+  skin:save.skin||"#38bdf8"
+};
 
 /* ================= GAME ================= */
 let bullets=[],enemies=[];
 let stars1=[],stars2=[],stars3=[];
-let score=0,level=1;
+let score=0,level=1,nextLevel=300;
 let cooldown=0;
+let difficulty=save.diff||1;
 
 /* ================= INPUT ================= */
 const input={left:false,right:false,up:false,down:false,shoot:false};
@@ -169,134 +171,147 @@ function hideMenu(){overlay.style.display="none";}
 
 showMenu(`
 <div class="menu">
-  <h1>SPACE SURVIVOR</h1>
-  <p>Sobreviva no espaço 🚀</p>
-  <button onclick="startGame()">JOGAR</button>
+<h1>SPACE SURVIVOR</h1>
+<button onclick="startGame()">JOGAR</button>
+<button onclick="difficultyMenu()">DIFICULDADE</button>
+<button onclick="skinMenu()">SKINS</button>
 </div>`);
 
 /* ================= START ================= */
 function startGame(){
   bullets=[];enemies=[];
-  score=0;level=1;
+  score=0;level=1;nextLevel=300;
   gameState=STATE.PLAY;
   hideMenu();
   shootBtn.style.display=pauseBtn.style.display=joystick.style.display="block";
 }
 
-/* ================= PAUSE (BUG CORRIGIDO) ================= */
+/* ================= PAUSE ================= */
 function togglePause(){
   if(gameState===STATE.PLAY){
     gameState=STATE.PAUSE;
     showMenu(`
-      <div class="menu">
-        <h1>PAUSE</h1>
-        <button onclick="resume()">Continuar</button>
-        <button onclick="startGame()">Reiniciar</button>
-      </div>
-    `);
-  }else if(gameState===STATE.PAUSE){
-    resume();
-  }
+    <div class="menu">
+    <h1>PAUSE</h1>
+    <button onclick="resume()">CONTINUAR</button>
+    <button onclick="startGame()">REINICIAR</button>
+    </div>`);
+  }else if(gameState===STATE.PAUSE) resume();
 }
-function resume(){
-  gameState=STATE.PLAY;
-  hideMenu();
-}
+function resume(){gameState=STATE.PLAY;hideMenu();}
 
-/* ================= SPAWN ================= */
-function spawnEnemy(){
-  enemies.push({x:Math.random()*360+20,y:-20,r:14});
-}
-function shoot(){
-  if(cooldown>0) return;
-  cooldown=15;
-  bullets.push({x:player.x,y:player.y});
+/* ================= MENUS EXTRA ================= */
+function difficultyMenu(){
+showMenu(`
+<div class="menu">
+<h1>DIFICULDADE</h1>
+<button onclick="setDiff(1)">EASY</button>
+<button onclick="setDiff(2)">NORMAL</button>
+<button onclick="setDiff(3)">HARD</button>
+<button onclick="setDiff(4)">EXPERT</button>
+<button onclick="back()">VOLTAR</button>
+</div>`);}
+function setDiff(d){difficulty=d;save.diff=d;saveGame();back();}
+function skinMenu(){
+showMenu(`
+<div class="menu">
+<h1>SKINS</h1>
+<button onclick="setSkin('#38bdf8')">AZUL</button>
+<button onclick="setSkin('#22c55e')">VERDE</button>
+<button onclick="setSkin('#ef4444')">VERMELHO</button>
+<button onclick="back()">VOLTAR</button>
+</div>`);}
+function setSkin(c){player.skin=c;save.skin=c;saveGame();}
+function back(){showMenu(document.querySelector(".menu").outerHTML);}
+
+/* ================= SAVE ================= */
+function saveGame(){
+localStorage.setItem("spaceSave",JSON.stringify(save));
 }
 
 /* ================= UPDATE ================= */
 function update(){
-  if(gameState!==STATE.PLAY) return;
+if(gameState!==STATE.PLAY) return;
 
-  if(input.left) player.x-=player.speed;
-  if(input.right) player.x+=player.speed;
-  if(input.up) player.y-=player.speed;
-  if(input.down) player.y+=player.speed;
-  if(input.shoot) shoot();
-
-  player.x=Math.max(player.r,Math.min(400-player.r,player.x));
-  player.y=Math.max(player.r,Math.min(600-player.r,player.y));
-
-  bullets.forEach(b=>b.y-=8);
-  enemies.forEach(e=>e.y+=2);
-
-  bullets=bullets.filter(b=>b.y>-10);
-  enemies=enemies.filter(e=>e.y<620);
-
-  if(Math.random()<.02) spawnEnemy();
-
-  enemies.forEach((e,ei)=>{
-    bullets.forEach((b,bi)=>{
-      if(Math.hypot(e.x-b.x,e.y-b.y)<e.r){
-        enemies.splice(ei,1);
-        bullets.splice(bi,1);
-        score+=10;
-        if(score%200===0) level++;
-      }
-    });
-  });
-
-  if(cooldown>0) cooldown--;
-
-  hudScore.textContent="Score: "+score;
-  hudLevel.textContent="Nível: "+level;
+if(input.left) player.x-=player.speed;
+if(input.right) player.x+=player.speed;
+if(input.up) player.y-=player.speed;
+if(input.down) player.y+=player.speed;
+if(input.shoot && cooldown<=0){
+  cooldown=15;
+  for(let i=0;i<player.shot;i++)
+  bullets.push({x:player.x+(i-0.5)*10,y:player.y});
 }
 
-/* ================= BACKGROUND (SPACE) ================= */
-function spawnStar(arr,speed){
-  arr.push({x:Math.random()*400,y:-10,s:speed});
+player.x=Math.max(player.r,Math.min(400-player.r,player.x));
+player.y=Math.max(player.r,Math.min(600-player.r,player.y));
+
+bullets.forEach(b=>b.y-=8);
+enemies.forEach(e=>e.y+=2+difficulty);
+
+bullets=bullets.filter(b=>b.y>-10);
+enemies=enemies.filter(e=>e.y<620);
+
+if(Math.random()<0.02*difficulty) enemies.push({x:Math.random()*360+20,y:-20,r:14});
+
+enemies.forEach((e,ei)=>{
+bullets.forEach((b,bi)=>{
+if(Math.hypot(e.x-b.x,e.y-b.y)<e.r){
+enemies.splice(ei,1);
+bullets.splice(bi,1);
+score+=10;
 }
-function updateStars(){
-  if(Math.random()<.1) spawnStar(stars1,1);
-  if(Math.random()<.07) spawnStar(stars2,2);
-  if(Math.random()<.04) spawnStar(stars3,3);
+});
+});
 
-  stars1.forEach(s=>s.y+=1);
-  stars2.forEach(s=>s.y+=2);
-  stars3.forEach(s=>s.y+=3);
+if(score>=nextLevel){
+level++;nextLevel+=400;
+player.shot=Math.min(3,player.shot+1);
+}
 
-  stars1=stars1.filter(s=>s.y<620);
-  stars2=stars2.filter(s=>s.y<620);
-  stars3=stars3.filter(s=>s.y<620);
+cooldown--;
+hudScore.textContent="Score: "+score;
+hudLevel.textContent="Nível: "+level;
+}
+
+/* ================= BACKGROUND ================= */
+function star(arr,s){arr.push({x:Math.random()*400,y:-10,s});}
+function bg(){
+if(Math.random()<.1) star(stars1,1);
+if(Math.random()<.07) star(stars2,2);
+if(Math.random()<.04) star(stars3,3);
+stars1.forEach(s=>s.y+=1);
+stars2.forEach(s=>s.y+=2);
+stars3.forEach(s=>s.y+=3);
+stars1=stars1.filter(s=>s.y<620);
+stars2=stars2.filter(s=>s.y<620);
+stars3=stars3.filter(s=>s.y<620);
 }
 
 /* ================= DRAW ================= */
 function draw(){
-  ctx.clearRect(0,0,400,600);
+ctx.clearRect(0,0,400,600);
+bg();
+ctx.fillStyle="#555";stars1.forEach(s=>ctx.fillRect(s.x,s.y,1,1));
+ctx.fillStyle="#999";stars2.forEach(s=>ctx.fillRect(s.x,s.y,2,2));
+ctx.fillStyle="#fff";stars3.forEach(s=>ctx.fillRect(s.x,s.y,2,2));
 
-  updateStars();
-  ctx.fillStyle="#555"; stars1.forEach(s=>ctx.fillRect(s.x,s.y,1,1));
-  ctx.fillStyle="#999"; stars2.forEach(s=>ctx.fillRect(s.x,s.y,2,2));
-  ctx.fillStyle="#fff"; stars3.forEach(s=>ctx.fillRect(s.x,s.y,2,2));
+ctx.fillStyle=player.skin;
+ctx.beginPath();ctx.arc(player.x,player.y,player.r,0,7);ctx.fill();
 
-  ctx.fillStyle="#38bdf8";
-  ctx.beginPath();ctx.arc(player.x,player.y,player.r,0,7);ctx.fill();
+ctx.fillStyle="#fff";
+bullets.forEach(b=>ctx.fillRect(b.x-2,b.y,4,10));
 
-  ctx.fillStyle="#fff";
-  bullets.forEach(b=>ctx.fillRect(b.x-2,b.y,4,10));
-
-  ctx.fillStyle="#ef4444";
-  enemies.forEach(e=>{
-    ctx.beginPath();ctx.arc(e.x,e.y,e.r,0,7);ctx.fill();
-  });
+ctx.fillStyle="#ef4444";
+enemies.forEach(e=>{
+ctx.beginPath();ctx.arc(e.x,e.y,e.r,0,7);ctx.fill();
+});
 }
 
 /* ================= LOOP ================= */
-function loop(){
-  update();
-  draw();
-  requestAnimationFrame(loop);
-}
-loop();
+(function loop(){
+update();draw();requestAnimationFrame(loop);
+})();
 </script>
 </body>
 </html>
