@@ -3,90 +3,103 @@
 <head>
 <meta charset="UTF-8">
 <title>Space Survivor</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+
+<!-- NOVA FONTE HUD -->
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap" rel="stylesheet">
 
 <style>
-*{margin:0;padding:0;box-sizing:border-box;font-family:Arial}
-html,body{
-  background:#000;color:#fff;overflow:hidden;
-  touch-action:none;
-  overscroll-behavior:none;
-}
-canvas{
-  display:block;margin:auto;
-  background:radial-gradient(circle at bottom,#020617,#000);
-  border-radius:16px;
-}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{background:#000;color:#fff;overflow:hidden;font-family:Arial}
+canvas{display:block;margin:auto;background:#020617;border-radius:16px}
 
 /* HUD */
 .hud{
-  position:absolute;top:10px;width:100%;
-  display:flex;justify-content:center;gap:10px;z-index:5
+  position:absolute;top:12px;width:100%;
+  display:flex;justify-content:center;gap:14px;z-index:5;
+  font-family:'Orbitron',sans-serif;
 }
 .hud span{
-  background:rgba(0,0,0,.6);
-  padding:6px 14px;border-radius:999px;font-size:14px
+  padding:8px 18px;
+  border-radius:999px;
+  font-size:13px;
+  background:linear-gradient(135deg,#020617,#020617);
+  box-shadow:0 0 14px rgba(56,189,248,.7);
+  animation:hudGlow 2s infinite;
+}
+@keyframes hudGlow{
+  0%,100%{box-shadow:0 0 8px rgba(56,189,248,.4)}
+  50%{box-shadow:0 0 20px rgba(56,189,248,1)}
+}
+.bump{animation:bump .2s}
+@keyframes bump{from{transform:scale(1)}to{transform:scale(1.2)}}
+
+/* BOSS BAR */
+#bossBar{
+  position:absolute;top:55px;left:50%;transform:translateX(-50%);
+  width:220px;height:10px;border-radius:999px;
+  background:#1f2933;overflow:hidden;display:none;
+}
+#bossLife{
+  height:100%;background:#ef4444;width:100%;
 }
 
-/* OVERLAY */
+/* OVERLAY / MENU */
 .overlay{
-  position:absolute;inset:0;
-  display:none;
+  position:absolute;inset:0;display:none;
   align-items:center;justify-content:center;
-  background:rgba(0,0,0,.85);
-  z-index:10;
+  background:rgba(0,0,0,.85);z-index:10;
 }
 .menu{
-  background:#020617;
-  border-radius:20px;
-  padding:26px;
-  width:300px;
-  text-align:center;
-  box-shadow:0 0 40px rgba(56,189,248,.4);
+  width:320px;padding:26px;border-radius:22px;
+  background:linear-gradient(180deg,#020617,#020617);
+  box-shadow:0 0 50px rgba(56,189,248,.6);
   animation:menuIn .4s ease;
+  text-align:center;
 }
 @keyframes menuIn{
-  from{transform:translateY(40px);opacity:0}
-  to{transform:translateY(0);opacity:1}
+  from{transform:translateY(40px) scale(.9);opacity:0}
+  to{transform:translateY(0) scale(1);opacity:1}
 }
-.menu h1{margin-bottom:10px;color:#38bdf8}
-.menu button,input{
-  width:100%;margin:6px 0;padding:12px;
-  border:none;border-radius:999px;font-weight:bold
+.menu h2{
+  color:#38bdf8;
+  margin-bottom:10px;
+  font-family:'Orbitron',sans-serif;
 }
 .menu button{
-  cursor:pointer;background:#38bdf8;color:#020617;
-  transition:.2s
+  width:100%;margin:6px 0;padding:12px;
+  border:none;border-radius:999px;
+  font-weight:bold;cursor:pointer;
+  background:#38bdf8;color:#020617;
+  transition:.2s;
 }
-.menu button:hover{transform:scale(1.05)}
-.menu input{text-align:center}
+.menu button:hover{
+  transform:scale(1.06);
+  box-shadow:0 0 14px #38bdf8;
+}
 
 /* INTRO */
 #intro{
-  position:absolute;inset:0;
-  background:#020617;
+  position:absolute;inset:0;background:#020617;
   display:flex;align-items:center;justify-content:center;
-  flex-direction:column;
-  z-index:20;
+  flex-direction:column;z-index:20;transition:.6s;
 }
 #rocket{
-  width:40px;height:60px;
-  background:#38bdf8;
+  width:40px;height:60px;background:#38bdf8;
   clip-path:polygon(50% 0,100% 100%,50% 85%,0 100%);
-  animation:fly 2s infinite ease-in-out;
+  animation:fly 1.2s infinite;
 }
 @keyframes fly{
   0%{transform:translateY(20px)}
-  50%{transform:translateY(-20px)}
+  50%{transform:translateY(-30px)}
   100%{transform:translateY(20px)}
 }
-#intro h1{margin-top:20px;color:#38bdf8}
 
-/* MOBILE */
+/* MOBILE CONTROLS */
 #shootBtn,#pauseBtn{
   position:absolute;width:80px;height:80px;
-  border-radius:50%;border:none;font-weight:bold;
-  display:none;z-index:6
+  border-radius:50%;border:none;z-index:6;
+  display:none;font-weight:bold;
 }
 #shootBtn{right:20px;bottom:20px;background:#ef4444;color:#fff}
 #pauseBtn{left:20px;top:20px;background:#38bdf8;color:#000}
@@ -94,15 +107,14 @@ canvas{
 /* JOYSTICK */
 #joystick{
   position:absolute;bottom:20px;left:20px;
-  width:120px;height:120px;
-  border-radius:50%;
-  background:rgba(255,255,255,.08);
-  display:none;z-index:6
+  width:120px;height:120px;border-radius:50%;
+  background:rgba(255,255,255,.1);
+  display:none;z-index:6;touch-action:none;
 }
 #stick{
   width:50px;height:50px;border-radius:50%;
   background:#38bdf8;
-  position:absolute;left:35px;top:35px
+  position:absolute;left:35px;top:35px;
 }
 </style>
 </head>
@@ -111,7 +123,7 @@ canvas{
 
 <div id="intro">
   <div id="rocket"></div>
-  <h1>SPACE SURVIVOR</h1>
+  <h1 style="color:#38bdf8">SPACE SURVIVOR</h1>
   <p>Toque para começar</p>
 </div>
 
@@ -120,8 +132,9 @@ canvas{
   <span id="hudCoins">Moedas: 0</span>
 </div>
 
-<div id="overlay" class="overlay"></div>
+<div id="bossBar"><div id="bossLife"></div></div>
 
+<div id="overlay" class="overlay"></div>
 <canvas id="game" width="400" height="600"></canvas>
 
 <button id="shootBtn">ATIRAR</button>
@@ -129,205 +142,195 @@ canvas{
 <div id="joystick"><div id="stick"></div></div>
 
 <script>
-/* ================= SAVE ================= */
+/* ===== UTIL ===== */
+const isMobile=/Android|iPhone/i.test(navigator.userAgent);
+const vibrate=t=>{if(isMobile&&navigator.vibrate)navigator.vibrate(t)};
+
+/* ===== SAVE ===== */
 const save=JSON.parse(localStorage.getItem("spaceSave")||"{}");
 save.coins??=0;
-save.skin??="#38bdf8";
-save.name??="Jogador";
-save.options??={hud:true};
-save.upgrades??={double:false,fast:false};
+save.options??={hud:true,vibration:true};
 localStorage.setItem("spaceSave",JSON.stringify(save));
 
-/* ================= STATE ================= */
-const STATE={MENU:0,PLAY:1,PAUSE:2};
-let gameState=STATE.MENU;
+/* ===== STATE ===== */
+let playing=false,paused=false;
 
-/* ================= CANVAS ================= */
+/* ===== CANVAS ===== */
 const canvas=document.getElementById("game");
 const ctx=canvas.getContext("2d");
 
-/* ================= STARS ================= */
+/* ===== OBJECTS ===== */
 let stars=[...Array(120)].map(()=>({x:Math.random()*400,y:Math.random()*600,s:Math.random()*2+1}));
-
-/* ================= PLAYER ================= */
-const player={x:200,y:500,r:14,speed:4,skin:save.skin};
-
-/* ================= GAME ================= */
-let bullets=[],enemies=[],explosions=[];
+const player={x:200,y:500,r:14,speed:4};
+let bullets=[],enemies=[];
+let boss=null;
 let score=0,coins=save.coins,cooldown=0;
 
-/* ================= INPUT ================= */
+/* ===== INPUT ===== */
 const input={x:0,y:0,shoot:false};
 
-/* ================= INTRO ================= */
+/* ===== INTRO ===== */
 intro.onclick=()=>{
-  intro.remove();
-  mainMenu();
+vibrate(40);
+intro.style.opacity=0;
+setTimeout(()=>intro.remove(),600);
+menu();
 };
 
-/* ================= MENUS ================= */
+/* ===== MENUS ===== */
 const overlay=document.getElementById("overlay");
-function showMenu(html){overlay.innerHTML=html;overlay.style.display="flex";}
-function hideMenu(){overlay.style.display="none";}
+function showMenu(h){overlay.innerHTML=h;overlay.style.display="flex"}
+function hideMenu(){overlay.style.display="none"}
 
-function mainMenu(){
+function menu(){
 showMenu(`
 <div class="menu">
-<h1>SPACE SURVIVOR</h1>
-<input value="${save.name}" oninput="save.name=this.value;saveGame()">
-<button onclick="startGame()">JOGAR</button>
-<button onclick="shopMenu()">SKINS</button>
-<button onclick="optionsMenu()">OPÇÕES</button>
-<button onclick="creditsMenu()">CRÉDITOS</button>
+<h2>SPACE SURVIVOR</h2>
+<button onclick="start()">JOGAR</button>
+<button onclick="options()">OPÇÕES</button>
+<button onclick="credits()">CRÉDITOS</button>
 </div>`);
 }
 
-function shopMenu(){
+function options(){
 showMenu(`
 <div class="menu">
-<h1>SKINS</h1>
-<button onclick="setSkin('#38bdf8')">AZUL</button>
-<button onclick="setSkin('#22c55e')">VERDE</button>
-<button onclick="setSkin('#facc15')">AMARELO</button>
-<button onclick="mainMenu()">VOLTAR</button>
-</div>`);
-}
-function setSkin(c){player.skin=c;save.skin=c;saveGame();}
-
-function optionsMenu(){
-showMenu(`
-<div class="menu">
-<h1>OPÇÕES</h1>
+<h2>OPÇÕES</h2>
 <button onclick="toggleHUD()">HUD: ${save.options.hud?'ON':'OFF'}</button>
-<button onclick="mainMenu()">VOLTAR</button>
+<button onclick="toggleVibration()">VIBRAÇÃO: ${save.options.vibration?'ON':'OFF'}</button>
+<button onclick="menu()">VOLTAR</button>
 </div>`);
 }
+
+function credits(){
+showMenu(`
+<div class="menu">
+<h2>CRÉDITOS</h2>
+<p>Game by Ander</p>
+<p>Thanks: You ❤️</p>
+<button onclick="menu()">VOLTAR</button>
+</div>`);
+}
+
+/* ===== OPTIONS ===== */
 function toggleHUD(){
 save.options.hud=!save.options.hud;
 hud.style.display=save.options.hud?'flex':'none';
-saveGame();optionsMenu();
-}
-
-function creditsMenu(){
-showMenu(`
-<div class="menu">
-<h1>CRÉDITOS</h1>
-<p>Feito com ❤️</p>
-<button onclick="mainMenu()">VOLTAR</button>
-</div>`);
-}
-
-/* ================= START ================= */
-function startGame(){
-  bullets=[];enemies=[];explosions=[];
-  score=0;coins=save.coins;
-  gameState=STATE.PLAY;
-  hideMenu();
-  shootBtn.style.display=pauseBtn.style.display=joystick.style.display="block";
-}
-
-/* ================= SAVE ================= */
-function saveGame(){
-save.coins=coins;
 localStorage.setItem("spaceSave",JSON.stringify(save));
+options();
+}
+function toggleVibration(){
+save.options.vibration=!save.options.vibration;
+localStorage.setItem("spaceSave",JSON.stringify(save));
+options();
 }
 
-/* ================= CONTROLS ================= */
-shootBtn.ontouchstart=e=>{e.preventDefault();input.shoot=true}
-shootBtn.ontouchend=e=>{e.preventDefault();input.shoot=false}
+/* ===== START / PAUSE ===== */
+function start(){
+playing=true;paused=false;
+hideMenu();
+shootBtn.style.display=pauseBtn.style.display=joystick.style.display="block";
+}
+pauseBtn.onclick=()=>{
+paused=!paused;
+if(paused){
+showMenu(`<div class="menu"><h2>PAUSE</h2><button onclick="paused=false;hideMenu()">CONTINUAR</button><button onclick="menu()">SAIR</button></div>`);
+}else hideMenu();
+};
 
-joystick.ontouchmove=e=>{
+/* ===== JOYSTICK ===== */
+let joy=false;
+joystick.addEventListener("touchstart",()=>joy=true);
+joystick.addEventListener("touchmove",e=>{
+if(!joy)return;
 const r=joystick.getBoundingClientRect();
 const t=e.touches[0];
-input.x=(t.clientX-(r.left+r.width/2))/30;
-input.y=(t.clientY-(r.top+r.height/2))/30;
-};
-joystick.ontouchend=()=>input.x=input.y=0;
+const dx=t.clientX-(r.left+r.width/2);
+const dy=t.clientY-(r.top+r.height/2);
+const d=Math.min(30,Math.hypot(dx,dy));
+const a=Math.atan2(dy,dx);
+stick.style.left=35+Math.cos(a)*d+"px";
+stick.style.top=35+Math.sin(a)*d+"px";
+input.x=Math.cos(a)*(d/30);
+input.y=Math.sin(a)*(d/30);
+});
+joystick.addEventListener("touchend",()=>{
+joy=false;stick.style.left="35px";stick.style.top="35px";
+input.x=input.y=0;
+});
 
-pauseBtn.onclick=()=>{
-  if(gameState===STATE.PLAY){
-    gameState=STATE.PAUSE;
-    showMenu(`
-    <div class="menu">
-    <h1>PAUSE</h1>
-    <button onclick="resume()">CONTINUAR</button>
-    <button onclick="mainMenu()">MENU</button>
-    </div>`);
-  }
-};
-function resume(){hideMenu();gameState=STATE.PLAY;}
+/* ===== SHOOT ===== */
+shootBtn.ontouchstart=()=>{input.shoot=true;vibrate(10)}
+shootBtn.ontouchend=()=>input.shoot=false;
 
-/* ================= UPDATE ================= */
+/* ===== GAME LOOP ===== */
 function update(){
-if(gameState!==STATE.PLAY)return;
+if(!playing||paused)return;
 
 player.x+=input.x*player.speed;
 player.y+=input.y*player.speed;
+player.x=Math.max(20,Math.min(380,player.x));
+player.y=Math.max(20,Math.min(580,player.y));
 
-if(input.shoot && cooldown<=0){
-cooldown=save.upgrades.fast?6:12;
+if(input.shoot&&cooldown<=0){
+cooldown=12;
 bullets.push({x:player.x,y:player.y});
-if(save.upgrades.double){
-bullets.push({x:player.x-6,y:player.y});
-bullets.push({x:player.x+6,y:player.y});
-}
 }
 cooldown--;
 
-if(Math.random()<0.03) enemies.push({x:Math.random()*360+20,y:-20,r:14});
+if(!boss&&score>0&&score%200===0){
+boss={x:200,y:-80,r:40,hp:200,max:200};
+bossBar.style.display="block";
+}
+
+if(!boss&&Math.random()<0.03)
+enemies.push({x:Math.random()*360+20,y:-20,r:14});
 
 bullets.forEach(b=>b.y-=8);
 enemies.forEach(e=>e.y+=2);
 
-enemies.forEach((e,ei)=>{
-bullets.forEach((b,bi)=>{
-if(Math.hypot(e.x-b.x,e.y-b.y)<e.r){
-enemies.splice(ei,1);
-bullets.splice(bi,1);
-explosions.push({x:e.x,y:e.y,t:20});
-score+=10;coins++;
+enemies=enemies.filter(e=>{
+if(bullets.some(b=>Math.hypot(e.x-b.x,e.y-b.y)<e.r)){
+score+=10;coins++;return false;
+}
+return e.y<620;
+});
+
+if(boss){
+boss.y+=1;
+bullets.forEach(b=>{
+if(Math.hypot(boss.x-b.x,boss.y-b.y)<boss.r){
+boss.hp-=5;
 }
 });
-});
+bossLife.style.width=(boss.hp/boss.max*100)+"%";
+if(boss.hp<=0){
+boss=null;
+bossBar.style.display="none";
+score+=200;
+}
+}
 
 hudScore.textContent="Score: "+score;
 hudCoins.textContent="Moedas: "+coins;
-saveGame();
 }
 
-/* ================= DRAW ================= */
 function draw(){
 ctx.clearRect(0,0,400,600);
-
-/* STARS */
 ctx.fillStyle="#888";
-stars.forEach(s=>{
-s.y+=s.s*.3;if(s.y>600)s.y=0;
-ctx.fillRect(s.x,s.y,2,2);
-});
-
-/* PLAYER */
-ctx.fillStyle=player.skin;
+stars.forEach(s=>{s.y+=s.s*.3;if(s.y>600)s.y=0;ctx.fillRect(s.x,s.y,2,2)});
+ctx.fillStyle="#38bdf8";
 ctx.beginPath();ctx.arc(player.x,player.y,player.r,0,7);ctx.fill();
-
-/* BULLETS */
 ctx.fillStyle="#fff";
 bullets.forEach(b=>ctx.fillRect(b.x-2,b.y,4,10));
-
-/* ENEMIES */
 ctx.fillStyle="#ef4444";
-enemies.forEach(e=>{
-ctx.beginPath();ctx.arc(e.x,e.y,e.r,0,7);ctx.fill();
-});
-
-/* EXPLOSIONS */
-explosions.forEach(ex=>{
-ctx.strokeStyle=`rgba(255,255,255,${ex.t/20})`;
-ctx.beginPath();ctx.arc(ex.x,ex.y,20-ex.t,0,7);ctx.stroke();
-});
+enemies.forEach(e=>{ctx.beginPath();ctx.arc(e.x,e.y,e.r,0,7);ctx.fill()});
+if(boss){
+ctx.strokeStyle="#ef4444";
+ctx.beginPath();ctx.arc(boss.x,boss.y,boss.r,0,7);ctx.stroke();
+}
 }
 
-/* ================= LOOP ================= */
 (function loop(){update();draw();requestAnimationFrame(loop)})();
 </script>
 </body>
